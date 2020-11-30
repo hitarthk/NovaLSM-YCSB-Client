@@ -356,7 +356,7 @@ public class NovaClient {
         return v;
     }
 
-    public ReturnValue initiateSourceDrivenMigration(int serverId, char migration_phase) {
+    public ReturnValue requestSourceToSendData(int serverId, char migration_phase) {
         ReturnValue v = new ReturnValue();
         sock_read_pivot = 0;
         try {
