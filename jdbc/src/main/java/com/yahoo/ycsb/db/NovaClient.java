@@ -310,6 +310,7 @@ public class NovaClient {
             size += longToBytes(socketBuffer, size, clientConfigId);
             size += longToBytes(socketBuffer, size, intKey);
             size += longToBytes(socketBuffer, size, value.length());
+
             copyString(socketBuffer, size, value);
             size += value.length();
             socketBuffer[size] = '\n';
@@ -366,7 +367,6 @@ public class NovaClient {
             socketBuffer[2] = '\n';
             sock.out.write(socketBuffer, 0, 3);
             sock.out.flush();
-            System.out.println("Before read");
             int readLength = readPlainText(sock.in, '\n');
             v.configId = (int) bytesToLong(socketBuffer);
             socketBuffer[0] = 'a';
@@ -387,10 +387,8 @@ public class NovaClient {
             int size = 1;
             size += longToBytes(socketBuffer, 1, ltcFragmentId);
             socketBuffer[size++] = '\n';
-            System.out.println("Before socket write");
             sock.out.write(socketBuffer, 0, size);
             sock.out.flush();
-            System.out.println("Reading response");
             int readBytes = readPlainText(sock.in, '\n');
             System.out.println("Read bytes in response: " + readBytes);
             long iterationNumber = bytesToLong(socketBuffer);

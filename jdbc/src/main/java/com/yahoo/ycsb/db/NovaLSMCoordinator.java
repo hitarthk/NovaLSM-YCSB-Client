@@ -31,15 +31,19 @@ public class NovaLSMCoordinator {
             }
 
             long start = System.currentTimeMillis();
+            System.out.println("Migration starts at: " + start / 1000);
+            boolean print = false;
             while (true) {
                 boolean isAllReady = true;
                 for (int i = 0; i < servers.size(); i++) {
                     boolean isReady = client.queryConfigComplete(i);
                     if (isReady) {
-                        System.out.println("Server " + i + " is ready");
+                        if(print)
+                            System.out.println("Server " + i + " is ready");
                     } else {
                         isAllReady = false;
-                        System.out.println("Server " + i + " is not ready");
+                        if(print)
+                            System.out.println("Server " + i + " is not ready");
                     }
                 }
                 if (isAllReady) {
@@ -49,6 +53,7 @@ public class NovaLSMCoordinator {
             }
 
             long end = System.currentTimeMillis();
+            System.out.println("Migration ends at: " + end / 1000);
             long duration = end - start;
             System.out.println(cfgId + " Take to complete configuration change " + duration);
         }

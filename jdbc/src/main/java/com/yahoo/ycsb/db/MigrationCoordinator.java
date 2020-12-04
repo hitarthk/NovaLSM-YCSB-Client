@@ -1,5 +1,6 @@
 package com.yahoo.ycsb.db;
 
+import java.sql.Time;
 import java.util.*;
 
 import com.google.common.collect.Lists;
@@ -7,7 +8,7 @@ import com.yahoo.ycsb.db.ConfigurationUtil.Configurations;
 import com.yahoo.ycsb.db.ConfigurationUtil.Configuration;
 import com.yahoo.ycsb.db.beans.LogReplaySummary;
 import com.yahoo.ycsb.db.beans.MigrationSummary;
-
+import java.sql.Timestamp;
 public class MigrationCoordinator {
 
     // These should exactly match the contents in NovaGlobalVariables in nova_common.h
@@ -71,6 +72,7 @@ public class MigrationCoordinator {
                 Integer migratingFragment = e.getKey();
                 if (!doneFragments.contains(migratingFragment)) {
                     Integer sourceServer = e.getValue().get(0);
+
                     Integer destinationServer = e.getValue().get(1);
                     NovaClient.ReturnValue v = client.getLogRecordsReplayed(destinationServer, migratingFragment);
                     LogReplaySummary newSummary = LogReplaySummary.parse(v.getValue);
@@ -102,34 +104,54 @@ public class MigrationCoordinator {
         for (int serverId = 0; serverId < nservers; serverId++) {
             client.requestSourceToSendData(serverId, MIGRATION_CONCLUDE_PHASE);
         }
-
+        long start = System.currentTimeMillis();
         while (true) {
             boolean isAllReady = true;
+            boolean print = false;
             for (int i = 0; i < nservers; i++) {
                 boolean isReady = client.queryConfigComplete(i);
                 if (isReady) {
-                    System.out.println("Server " + i + " is ready");
+                    if(print)
+                        System.out.println("Server " + i + " is ready");
                 } else {
                     isAllReady = false;
-                    System.out.println("Server " + i + " is not ready");
+                    if(print)
+                        System.out.println("Server " + i + " is not ready");
                 }
             }
             if (isAllReady) {
                 break;
             }
-            Thread.sleep(100);
+            Thread.sleep(10);
         }
+        long end = System.currentTimeMillis();
+        System.out.println("Conclude phase takes: "+(end-start));
     }
 
     public static void doMigration(NovaClient client, List<String> servers, MigrationSummary summary, long thresholdForAtomicHandover) throws InterruptedException {
+        Timestamp sts = new Timestamp(System.currentTimeMillis());
+        long ms_ts = (System.currentTimeMillis()/1000);
+        long actual_ms = System.currentTimeMillis();
+        System.out.println("ms_ts: "+ms_ts);
+        System.out.println("Start time: "+sts);
         System.out.println("Starting init phase");
         executeInitPhase(client, servers.size());
         System.out.println("Done init phase");
         System.out.println("Starting intermediate phase");
         executeIntermediatePhase(client, summary, thresholdForAtomicHandover);
         System.out.println("Done intermediate phase");
+        long hs_ts = (System.currentTimeMillis()/1000);
+        long actual_hs = System.currentTimeMillis();
+        System.out.println("hs_ts: "+hs_ts);
+        long catchupTime = actual_hs - actual_ms;
+        System.out.println("Catchup time: "+catchupTime);
         executeConcludePhase(client, servers.size());
         System.out.println("Done conclude phase");
+        Timestamp ets = new Timestamp(System.currentTimeMillis());
+        System.out.println("End time: "+ets);
+        long he_ts = (System.currentTimeMillis()/1000);
+        System.out.println("he_ts: "+he_ts);
+        long handoverTime = he_ts - hs_ts;
     }
 
     public static void main(String[] args) throws Exception {
